@@ -1,0 +1,25 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                  String   @id @default(uuid())
+  github_id           String   @unique
+  username            String
+  github_access_token String
+  created_at          DateTime @default(now())
+}
+
+model Event {
+  id                 String   @id @default(uuid())
+  github_delivery_id String   @unique
+  event_type         String
+  payload            Json
+  status             String
+  created_at         DateTime @default(now())
+}
