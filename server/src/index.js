@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 5000;
 
 // Enable CORS
 app.use(cors({
-  origin: 'http://localhost:5173', // Vite default port
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
 
@@ -136,7 +136,8 @@ app.get('/auth/github/callback', async (req, res) => {
 
     // 5. Redirect back to frontend dashboard/auth callback handler
     // We pass the token in the query parameter for the client to capture
-    const frontendRedirectUrl = `http://localhost:5173/auth/callback?token=${token}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendRedirectUrl = `${frontendUrl}/auth/callback?token=${token}`;
     res.redirect(frontendRedirectUrl);
 
   } catch (err) {
