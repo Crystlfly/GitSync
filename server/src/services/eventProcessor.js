@@ -17,7 +17,7 @@ const prisma = new PrismaClient();
 export const processEvent = async (eventId, eventType, payload) => {
   console.log(`[Event Processor] Beginning background processing for event: ${eventId} (${eventType})`);
   let activitySummary = null;
-  
+
   try {
     // 1. Identify the installation user to retrieve GitHub access token
     const repoOwnerId = String(payload.repository?.owner?.id || '');
@@ -83,6 +83,10 @@ export const processEvent = async (eventId, eventType, payload) => {
         slackText = `New Issue Opened in ${repoFullName} [AI Label: *${label}*]\n*Issue*: ${issueTitle}\n*AI Summary*: ${summary}\nLink: ${issueUrl}`;
       }
 
+      if (!user || !user.github_access_token) {
+        slackText = `*Unverified Repo Owner:* ${slackText}\n*(GitHub label skipped due to missing OAuth token)*`;
+      }
+
       console.log('[Event Processor] Sending Slack notification...');
       try {
         await sendSlackNotification(slackText);
@@ -100,7 +104,10 @@ export const processEvent = async (eventId, eventType, payload) => {
       activitySummary = `PR ${action}: ${prTitle}`;
 
       // Dispatch Slack notification for PRs
-      const slackText = `Pull Request ${action} in ${repoFullName}: "${prTitle}" - ${prUrl}`;
+      let slackText = `Pull Request ${action} in ${repoFullName}: "${prTitle}" - ${prUrl}`;
+      if (!user || !user.github_access_token) {
+        slackText = `*Unverified Repo Owner:* ${slackText}\n*(GitHub label skipped due to missing OAuth token)*`;
+      }
       console.log('[Event Processor] Sending Slack notification for PR...');
       try {
         await sendSlackNotification(slackText);
@@ -114,7 +121,7 @@ export const processEvent = async (eventId, eventType, payload) => {
     // 3. Mark the database record as processed
     await prisma.event.update({
       where: { id: eventId },
-      data: { 
+      data: {
         status: 'processed',
         ...(activitySummary ? { activitySummary } : {})
       }
@@ -123,7 +130,7 @@ export const processEvent = async (eventId, eventType, payload) => {
 
   } catch (error) {
     console.error(`[Event Processor] Failure encountered while processing event ${eventId}:`, error.message);
-    
+
     // Fallback error-state logger
     try {
       await prisma.event.update({
