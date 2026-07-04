@@ -3,6 +3,59 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+/* --- Modern Vector SVG Icons --- */
+const BrandLogoIcon = () => (
+  <svg className="logo-svg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
+const IssueIcon = () => (
+  <svg className="icon-badge-svg" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="2.5" />
+  </svg>
+);
+
+const PRIcon = () => (
+  <svg className="icon-badge-svg" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <circle cx="18" cy="18" r="3" />
+    <circle cx="6" cy="6" r="3" />
+    <circle cx="6" cy="18" r="3" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M18 15V9a4 4 0 00-4-4H9M6 9v6" />
+  </svg>
+);
+
+const WebhookIcon = () => (
+  <svg className="icon-badge-svg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 5h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2z" />
+  </svg>
+);
+
+const CopyIcon = () => (
+  <svg className="copy-btn-svg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002-2h2a2 2 0 002 2m0 0h2a2 2 0 012 2v3" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg className="copy-btn-svg" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg className="drawer-close-svg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const EmptyStateIcon = () => (
+  <svg className="empty-icon-svg" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+  </svg>
+);
+
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(null);
@@ -12,9 +65,10 @@ function App() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [copied, setCopied] = useState(false);
   const pollIntervalRef = useRef(null);
 
-  // 1. Detect tokens returned from GitHub OAuth sequence in URL
+  // 1. Detect URL Query Tokens (OAuth callback redirect)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tokenFromUrl = params.get('token');
@@ -26,7 +80,12 @@ function App() {
     }
   }, []);
 
-  // 2. Decode user session details from JWT token
+  // Reset copy state when active event swaps
+  useEffect(() => {
+    setCopied(false);
+  }, [selectedEvent]);
+
+  // 2. Decode user JWT payload
   useEffect(() => {
     if (token) {
       try {
@@ -46,7 +105,7 @@ function App() {
     }
   }, [token]);
 
-  // 3. Fetch Event log lists from backend (supporting query filtering by repo)
+  // 3. Fetch logs from backend database
   const fetchEventsList = async (showSpinner = false, targetRepo = selectedRepo) => {
     if (!token) return;
     if (showSpinner) setFetching(true);
@@ -63,7 +122,7 @@ function App() {
       });
       setEvents(response.data);
 
-      // Populate the dropdown list dynamically from unique repository names
+      // Populate dropdown from database full names on initial load (or when filter is reset)
       if (!targetRepo) {
         const uniqueRepos = [...new Set(response.data.map((event) => event.repo_name))].filter(Boolean);
         setRepos(uniqueRepos);
@@ -78,13 +137,11 @@ function App() {
     }
   };
 
-  // 4. Setup polling mechanism for live updates
+  // 4. Setup polling mechanism
   useEffect(() => {
     if (token) {
-      // First fetch
       fetchEventsList(true);
 
-      // Start interval polling every 5 seconds
       pollIntervalRef.current = setInterval(() => {
         fetchEventsList(false);
       }, 5000);
@@ -119,6 +176,21 @@ function App() {
     }
   };
 
+  // Copy to clipboard utility
+  const handleCopyPayload = () => {
+    if (!selectedEvent) return;
+    try {
+      const rawText = typeof selectedEvent.payload === 'string'
+        ? selectedEvent.payload
+        : JSON.stringify(selectedEvent.payload, null, 2);
+      navigator.clipboard.writeText(rawText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Copy failure:', err);
+    }
+  };
+
   // Parse helper for payload summary info
   const parsePayloadInfo = (event) => {
     let repo = 'N/A';
@@ -144,12 +216,11 @@ function App() {
     return { repo, summary };
   };
 
-  // Statistics calculation helpers
+  // Stats helpers
   const totalCount = events.length;
   const processedCount = events.filter((e) => e.status === 'processed').length;
   const failedCount = events.filter((e) => e.status === 'failed').length;
 
-  // Format creation timestamp helper
   const formatTime = (isoString) => {
     try {
       const d = new Date(isoString);
@@ -166,8 +237,10 @@ function App() {
         <>
           <nav className="navbar">
             <div className="brand-section">
-              <div className="logo-dot"></div>
-              <span className="brand-title">GitSync console</span>
+              <div className="logo-container">
+                <BrandLogoIcon />
+              </div>
+              <span className="brand-title">gitsync</span>
             </div>
             <div className="user-badge">
               <span className="username-display">@{user.username}</span>
@@ -179,47 +252,38 @@ function App() {
 
           <main className="dashboard-content">
             <div>
-              <h2 className="section-title" style={{ marginBottom: '8px' }}>Integrations Dashboard</h2>
-              <p style={{ color: 'var(--primary-muted)', fontSize: '0.9rem' }}>
-                Monitor webhook events, verify signatures, and analyze delivery states.
+              <h2 className="section-title" style={{ marginBottom: '6px' }}>Integrations Dashboard</h2>
+              <p style={{ color: 'var(--primary-muted)', fontSize: '0.85rem' }}>
+                Monitor repository webhook dispatches, review AI-triaged categories, and verify delivery logs.
               </p>
             </div>
 
-            {/* Statistics Row */}
+            {/* Statistics Grid */}
             <div className="stats-grid">
               <div className="stat-card">
-                <span className="stat-header">Total Logs</span>
+                <span className="stat-header">Total Deliveries</span>
                 <span className="stat-number">{totalCount}</span>
               </div>
-              <div className="stat-card" style={{ borderColor: 'rgba(48, 209, 88, 0.15)' }}>
+              <div className="stat-card" style={{ borderColor: 'rgba(48, 209, 88, 0.12)' }}>
                 <span className="stat-header" style={{ color: 'var(--status-processed-text)' }}>Processed</span>
                 <span className="stat-number" style={{ color: 'var(--status-processed-text)' }}>{processedCount}</span>
               </div>
-              <div className="stat-card" style={{ borderColor: 'rgba(255, 69, 58, 0.15)' }}>
+              <div className="stat-card" style={{ borderColor: 'rgba(255, 69, 58, 0.12)' }}>
                 <span className="stat-header" style={{ color: 'var(--status-failed-text)' }}>Failed</span>
                 <span className="stat-number" style={{ color: 'var(--status-failed-text)' }}>{failedCount}</span>
               </div>
             </div>
 
-            {/* Webhook Logs Feed */}
+            {/* Webhook Deliveries Table Panel */}
             <div className="table-panel">
               <div className="table-header-bar">
-                <span className="table-title">Webhook Deliveries</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span className="table-title">Webhook Logs</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <select
+                    className="select-filter"
                     value={selectedRepo}
                     onChange={handleRepoChange}
                     disabled={fetching}
-                    style={{
-                      background: 'var(--bg-surface)',
-                      color: '#ffffff',
-                      border: '1px solid var(--border-dim)',
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '6px 12px',
-                      fontSize: '0.8rem',
-                      outline: 'none',
-                      cursor: 'pointer'
-                    }}
                   >
                     <option value="">All Repositories</option>
                     {repos.map((repo) => (
@@ -239,7 +303,7 @@ function App() {
                   <thead>
                     <tr>
                       <th>Event Type</th>
-                      <th>Repo</th>
+                      <th>Repository</th>
                       <th>Activity Summary</th>
                       <th>Delivery ID</th>
                       <th>Status</th>
@@ -250,23 +314,21 @@ function App() {
                     {events.map((event) => {
                       const { repo, summary } = parsePayloadInfo(event);
                       
-                      // Match visual badges based on issue vs. PR vs other
-                      const iconClass =
-                        event.event_type === 'issues'
-                          ? 'icon-issues'
-                          : event.event_type === 'pull_request'
-                          ? 'icon-pr'
-                          : 'icon-other';
+                      const isIssue = event.event_type === 'issues';
+                      const isPr = event.event_type === 'pull_request';
 
                       return (
                         <tr key={event.id} onClick={() => setSelectedEvent(event)}>
                           <td>
                             <div className="event-type-container">
-                              <span className={`event-icon ${iconClass}`}>{event.event_type}</span>
+                              <span className={`icon-svg-badge icon-${isIssue ? 'issues' : isPr ? 'pr' : 'other'}`}>
+                                {isIssue ? <IssueIcon /> : isPr ? <PRIcon /> : <WebhookIcon />}
+                                {event.event_type}
+                              </span>
                             </div>
                           </td>
                           <td>
-                            <span style={{ fontWeight: '500' }}>{repo}</span>
+                            <span style={{ fontWeight: '500', color: '#ffffff' }}>{repo}</span>
                           </td>
                           <td style={{ color: 'var(--primary-muted)' }}>{summary}</td>
                           <td>
@@ -287,8 +349,8 @@ function App() {
                 </table>
               ) : (
                 <div className="empty-state">
-                  <span className="empty-icon">🔌</span>
-                  No Webhook events captured yet. Make a push or trigger an issue on your repo.
+                  <EmptyStateIcon />
+                  No Webhook deliveries logged yet. Configure your repository hooks to begin.
                 </div>
               )}
             </div>
@@ -301,25 +363,26 @@ function App() {
                 <div className="drawer-header">
                   <span className="drawer-title">Webhook Payload Inspector</span>
                   <button className="drawer-close" onClick={() => setSelectedEvent(null)}>
-                    &times;
+                    <CloseIcon />
                   </button>
                 </div>
                 <div className="drawer-body">
                   <div className="drawer-meta-grid">
                     <span className="drawer-meta-label">Event Type:</span>
                     <span>
-                      <span className={`event-icon icon-${selectedEvent.event_type === 'issues' ? 'issues' : selectedEvent.event_type === 'pull_request' ? 'pr' : 'other'}`}>
+                      <span className={`icon-svg-badge icon-${selectedEvent.event_type === 'issues' ? 'issues' : selectedEvent.event_type === 'pull_request' ? 'pr' : 'other'}`}>
+                        {selectedEvent.event_type === 'issues' ? <IssueIcon /> : selectedEvent.event_type === 'pull_request' ? <PRIcon /> : <WebhookIcon />}
                         {selectedEvent.event_type}
                       </span>
                     </span>
 
                     <span className="drawer-meta-label">Delivery ID:</span>
-                    <span className="monospace">{selectedEvent.github_delivery_id}</span>
+                    <span className="monospace drawer-meta-value">{selectedEvent.github_delivery_id}</span>
 
                     <span className="drawer-meta-label">Logged At:</span>
-                    <span className="monospace">{new Date(selectedEvent.created_at).toLocaleString()}</span>
+                    <span className="monospace drawer-meta-value">{new Date(selectedEvent.created_at).toLocaleString()}</span>
 
-                    <span className="drawer-meta-label">Processing Status:</span>
+                    <span className="drawer-meta-label">Status:</span>
                     <span>
                       <span className={`status-badge status-${selectedEvent.status}`}>
                         {selectedEvent.status}
@@ -327,9 +390,13 @@ function App() {
                     </span>
                   </div>
 
-                  <span className="drawer-meta-label" style={{ marginTop: '12px', display: 'block' }}>
-                    Raw JSON Event Payload:
-                  </span>
+                  <div className="payload-section-header">
+                    <span className="drawer-meta-label">Raw JSON Payload:</span>
+                    <button className="copy-btn" onClick={handleCopyPayload}>
+                      {copied ? <CheckIcon /> : <CopyIcon />}
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
                   
                   <div className="payload-container">
                     <pre>
@@ -356,30 +423,23 @@ function App() {
         </>
       ) : (
         /* Guest / Login View */
-        <div style={{ display: 'flex', alignItems: 'center', justifyCenter: 'center', height: '100vh', margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', margin: '0 auto' }}>
           <div className="login-card">
-            <span style={{ fontSize: '3rem', display: 'block', marginBottom: '16px' }}>⚡</span>
-            <h1 className="brand-title" style={{ fontSize: '1.8rem', marginBottom: '8px' }}>GitSync</h1>
-            <p style={{ color: 'var(--primary-muted)', fontSize: '0.9rem', marginBottom: '32px' }}>
-              Connect GitHub hooks, dispatch alerts to Slack, and examine logs inside a dark theme dashboard.
+            <div className="login-logo-container">
+              <svg className="login-logo-svg" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h1 className="brand-title" style={{ fontSize: '1.45rem', marginBottom: '8px', color: '#ffffff' }}>gitsync</h1>
+            <p style={{ color: 'var(--primary-muted)', fontSize: '0.85rem', marginBottom: '28px', lineHeight: '1.5' }}>
+              Connect GitHub hooks, automatically analyze and triage issues, and dispatch alerts to Slack.
             </p>
             <button 
-              className="btn btn-github" 
+              className="btn-github" 
               onClick={handleLogin} 
               disabled={loading}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: '#ffffff',
-                color: '#000000',
-                fontWeight: '600',
-                border: 'none',
-                cursor: 'pointer',
-                borderRadius: '4px',
-                fontSize: '0.95rem'
-              }}
             >
-              {loading ? 'Redirecting...' : 'Login with GitHub'}
+              {loading ? 'Connecting...' : 'Login with GitHub'}
             </button>
           </div>
         </div>
