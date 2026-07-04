@@ -34,8 +34,8 @@ export const processEvent = async (eventId, eventType, payload) => {
     });
 
     if (!user) {
-      console.log('[Event Processor] No matching user found for repository owner. Attempting database fallback.');
-      user = await prisma.user.findFirst();
+      console.warn(`[Event Processor] No matching user for repo owner (id: ${repoOwnerId}, login: ${repoOwnerLogin}). Skipping GitHub write actions.`);
+      // The downstream if (!user || !user.github_access_token) will now safely catch this and skip the labeling.
     }
 
     // 2. Perform event actions if the event is "issues" and action is "opened"
