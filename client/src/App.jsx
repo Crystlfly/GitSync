@@ -7,6 +7,8 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState([]);
+  const [repos, setRepos] = useState([]);
+  const [selectedRepo, setSelectedRepo] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -44,18 +46,28 @@ function App() {
     }
   }, [token]);
 
-  // 3. Fetch Event log lists from backend
-  const fetchEventsList = async (showSpinner = false) => {
+  // 3. Fetch Event log lists from backend (supporting query filtering by repo)
+  const fetchEventsList = async (showSpinner = false, targetRepo = selectedRepo) => {
     if (!token) return;
     if (showSpinner) setFetching(true);
     
     try {
-      const response = await axios.get(`${API_URL}/api/events`, {
+      const url = targetRepo
+        ? `${API_URL}/api/events?repo=${encodeURIComponent(targetRepo)}`
+        : `${API_URL}/api/events`;
+
+      const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
       setEvents(response.data);
+
+      // Populate the dropdown list dynamically from unique repository names
+      if (!targetRepo) {
+        const uniqueRepos = [...new Set(response.data.map((event) => event.repo_name))].filter(Boolean);
+        setRepos(uniqueRepos);
+      }
     } catch (err) {
       console.error('Failed to retrieve event logs:', err.message);
       if (err.response?.status === 401 || err.response?.status === 403) {
@@ -83,7 +95,13 @@ function App() {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [token]);
+  }, [token, selectedRepo]);
+
+  const handleRepoChange = (e) => {
+    const nextRepo = e.target.value;
+    setSelectedRepo(nextRepo);
+    fetchEventsList(true, nextRepo);
+  };
 
   const handleLogin = () => {
     setLoading(true);
@@ -187,9 +205,33 @@ function App() {
             <div className="table-panel">
               <div className="table-header-bar">
                 <span className="table-title">Webhook Deliveries</span>
-                <button className="refresh-button" onClick={() => fetchEventsList(true)} disabled={fetching}>
-                  {fetching ? 'Syncing...' : 'Sync Feed'}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <select
+                    value={selectedRepo}
+                    onChange={handleRepoChange}
+                    disabled={fetching}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      color: '#ffffff',
+                      border: '1px solid var(--border-dim)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '6px 12px',
+                      fontSize: '0.8rem',
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="">All Repositories</option>
+                    {repos.map((repo) => (
+                      <option key={repo} value={repo}>
+                        {repo}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="refresh-button" onClick={() => fetchEventsList(true)} disabled={fetching}>
+                    {fetching ? 'Syncing...' : 'Sync Feed'}
+                  </button>
+                </div>
               </div>
 
               {events.length > 0 ? (

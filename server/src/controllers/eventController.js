@@ -6,12 +6,22 @@ const prisma = new PrismaClient();
  * Controller to fetch all logged webhook events sorted by creation date descending.
  */
 export const getEvents = async (req, res) => {
+  const { repo } = req.query;
+
   try {
-    const events = await prisma.event.findMany({
+    const findOptions = {
       orderBy: {
         created_at: 'desc'
       }
-    });
+    };
+
+    if (repo) {
+      findOptions.where = {
+        repo_name: repo
+      };
+    }
+
+    const events = await prisma.event.findMany(findOptions);
 
     return res.json(events);
   } catch (error) {
