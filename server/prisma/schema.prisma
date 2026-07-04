@@ -17,9 +17,13 @@ model User {
 
 model Event {
   id                 String   @id @default(uuid())
-  github_delivery_id String   @unique
+  github_delivery_id String
+  repo_name          String   @default("")
   event_type         String
   payload            Json
   status             String
+  activitySummary    String?
   created_at         DateTime @default(now())
+
+  @@unique([github_delivery_id, repo_name])
 }

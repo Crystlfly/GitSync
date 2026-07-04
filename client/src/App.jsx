@@ -102,21 +102,23 @@ function App() {
   // Parse helper for payload summary info
   const parsePayloadInfo = (event) => {
     let repo = 'N/A';
-    let summary = 'Webhook activity logged';
+    let summary = event.activitySummary || 'Webhook activity logged';
     
     try {
       const parsed = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
       repo = parsed.repository?.full_name || 'N/A';
       
-      if (event.event_type === 'issues') {
-        summary = `${parsed.action || 'updated'} issue: "${parsed.issue?.title || ''}"`;
-      } else if (event.event_type === 'pull_request') {
-        summary = `${parsed.action || 'updated'} PR: "${parsed.pull_request?.title || ''}"`;
-      } else {
-        summary = `${event.event_type} event triggered`;
+      if (!event.activitySummary) {
+        if (event.event_type === 'issues') {
+          summary = `${parsed.action || 'updated'} issue: "${parsed.issue?.title || ''}"`;
+        } else if (event.event_type === 'pull_request') {
+          summary = `${parsed.action || 'updated'} PR: "${parsed.pull_request?.title || ''}"`;
+        } else {
+          summary = `${event.event_type} event triggered`;
+        }
       }
     } catch (e) {
-      summary = 'Invalid JSON body';
+      if (!event.activitySummary) summary = 'Invalid JSON body';
     }
 
     return { repo, summary };

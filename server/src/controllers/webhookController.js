@@ -46,13 +46,20 @@ export const handleGithubWebhook = async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized', message: 'Cryptographic signature mismatch.' });
     }
 
-    // 3. Idempotency Check (Check if event has already been registered)
+    // 3. Idempotency Check (Check if event has already been registered for this repository)
+    const repoName = req.body.repository?.full_name || '';
+
     const existingEvent = await prisma.event.findUnique({
-      where: { github_delivery_id: deliveryId }
+      where: {
+        github_delivery_id_repo_name: {
+          github_delivery_id: deliveryId,
+          repo_name: repoName
+        }
+      }
     });
 
     if (existingEvent) {
-      console.log(`[Webhooks] Event ID ${deliveryId} has already been logged. Skipping redundant processing.`);
+      console.log(`[Webhooks] Event ID ${deliveryId} for repo ${repoName} has already been logged. Skipping redundant processing.`);
       return res.status(200).json({
         message: 'Event already processed (idempotent entry)',
         deliveryId,
@@ -64,6 +71,7 @@ export const handleGithubWebhook = async (req, res) => {
     const savedEvent = await prisma.event.create({
       data: {
         github_delivery_id: deliveryId,
+        repo_name: repoName,
         event_type: eventType,
         payload: req.body,
         status: 'received'
