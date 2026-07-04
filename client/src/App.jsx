@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(null);
@@ -48,7 +50,7 @@ function App() {
     if (showSpinner) setFetching(true);
     
     try {
-      const response = await axios.get('http://localhost:5000/api/events', {
+      const response = await axios.get(`${API_URL}/api/events`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -85,7 +87,7 @@ function App() {
 
   const handleLogin = () => {
     setLoading(true);
-    window.location.href = 'http://localhost:5000/auth/github';
+    window.location.href = `${API_URL}/auth/github`;
   };
 
   const handleLogout = () => {

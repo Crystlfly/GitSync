@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 /**
  * Handles incoming GitHub webhook payloads.
  * Validates SHA256 signatures, performs idempotency checks,
- * and saves incoming webhook events to SQLite.
+ * and saves incoming webhook events to PostgreSQL.
  */
 export const handleGithubWebhook = async (req, res) => {
   const signature = req.headers['x-hub-signature-256'];
