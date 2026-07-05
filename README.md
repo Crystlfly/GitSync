@@ -16,30 +16,14 @@ custom deep dark theme) to monitor real-time webhook logs.
 GitSync uses a robust, asynchronous event-driven workflow designed to
 deliver speed, reliability, and security:
 
-``` text
-                  ┌──────────────────────────────┐
-                  │   GitHub Webhook Dispatch    │
-                  └──────────────┬───────────────┘
-                                 │ POST /api/webhooks/github
-                                 ▼
-                  ┌──────────────────────────────┐
-                  │    Express Web Server        │
-                  │  - Cryptographic Signature   │
-                  │  - Event Log Creation        │
-                  └──────────────┬───────────────┘
-                                 │
-                   ┌─────────────┴─────────────┐
-                   │ (Immediate HTTP 202)      │ (Asynchronous background dispatch)
-                   ▼                           ▼
-        ┌─────────────────────┐     ┌───────────────────────────────────┐
-        │   GitHub Webhook    │     │      Background Processor         │
-        │   Engine (Return)   │     │  - Authenticates installation     │
-        └─────────────────────┘     │  - Evaluates action triggers      │
-                                    │  - Tags repository via REST API   │
-                                    │  - Dispatches message to Slack    │
-                                    │  - Updates Event state in DB      │
-                                    └───────────────────────────────────┘
-```
+## System Architecture
+<img src="./assets/System%20Architecture.png" width="700" alt="System Architecture" />
+
+## Webhook Security & Data Isolation
+<img src="./assets/Webhook%20Security%20&%20Data%20Isolation.png" width="700" height="800" alt="Webhook Security Flow" />
+
+## AI Triage & Fallback Logic
+<img src="./assets/AI%20Triage%20&%20Fallback%20Logic.png" width="700" height="900" alt="AI Logic Flow" />
 
 ## Security
 
