@@ -22,6 +22,7 @@ To ensure the highest possible reliability and security within the 72-hour windo
 
 1. **OAuth vs. GitHub App (JWT):** I chose to implement standard GitHub OAuth rather than the JWT-based GitHub App integration. This allowed me to focus my time entirely on perfecting the core webhook security (HMAC signature verification) and cross-tenant data isolation.
 2. **Hardcoded AI Triage vs. Configurable Rules:** Instead of building a complex UI for user-defined routing rules, I hardcoded the AI to triage specific labels (bug, enhancement, question, documentation). I prioritized making the AI's fallback mechanisms and Slack observability fault-tolerant over expanding the frontend feature set.
+3. **Targeted Unit Testing:** I prioritized testing the isolated `signatureValidator` utility. By covering this critical, pure cryptographic function with Jest, I ensured the integrity of the webhook ingestion layer without falling into the time sink of mocking external APIs (Prisma, Gemini, GitHub) for side-effect code.
 
 ## The Hardest AI-Generated Bug (Cross-Tenant Security Flaw)
 
