@@ -1,6 +1,6 @@
-import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { processEvent } from '../services/eventProcessor.js';
+import { verifySignature } from '../utils/signatureValidator.js';
 
 const prisma = new PrismaClient();
 
@@ -33,15 +33,8 @@ export const handleGithubWebhook = async (req, res) => {
     }
 
     // 2. Cryptographic HMAC-SHA256 Signature Verification
-    const hmac = crypto.createHmac('sha256', webhookSecret);
-    const rawBody = req.rawBody ? req.rawBody.toString('utf8') : '';
-    const computedDigest = 'sha256=' + hmac.update(rawBody).digest('hex');
-
-    const clientSigBuffer = Buffer.from(signature);
-    const serverSigBuffer = Buffer.from(computedDigest);
-
-    // Prevent timing attacks and buffer bounds errors
-    if (clientSigBuffer.length !== serverSigBuffer.length || !crypto.timingSafeEqual(clientSigBuffer, serverSigBuffer)) {
+    const rawBody = req.rawBody ? req.rawBody : '';
+    if (!verifySignature(rawBody, signature, webhookSecret)) {
       console.warn(`[Webhooks] Invalid signature. Client payload digest mismatch.`);
       return res.status(401).json({ error: 'Unauthorized', message: 'Cryptographic signature mismatch.' });
     }
