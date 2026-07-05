@@ -42,6 +42,16 @@ deliver speed, reliability, and security:
 
 ------------------------------------------------------------------------
 
+
+# Testing & Reliability
+
+To ensure production-grade security, the core cryptographic HMAC webhook validation is fully covered by Jest unit tests. 
+
+```bash
+cd server
+npm test
+```
+
 # Tech Stack
 
   Layer            Technology
