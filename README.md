@@ -84,39 +84,23 @@ Visit:
 
 Login using GitHub.
 
-## 2. Configure GitHub Webhook
+## 2. Trigger the Bot (Live Demo)
 
-Repository → **Settings → Webhooks → Add Webhook**
+To adhere to strict security practices, the live `GITHUB_WEBHOOK_SECRET` is not exposed in this documentation. Instead, a dedicated demo repository has been pre-configured to communicate with the live backend.
 
-    Payload URL:
-    https://gitsync-g5b5.onrender.com/api/webhooks/github
-
-    Content Type:
-    application/json
-
-    Secret:
-    YOUR_WEBHOOK_SECRET
-
-Subscribe to:
-
--   Issues
--   Pull Requests
-
-### 3. Trigger the Bot
-
-Create a vaguely worded GitHub issue.
-
-**Title:** The app feels really slow today
-
-**Body:** I don't know what changed, but every time I load the main page on mobile Safari, it takes 10 seconds and crashes.
+1. Go to the Demo Repository: **https://github.com/gitsync-demo-eval/test-repo**
+2. Click on the **Issues** tab and create a vaguely worded new issue.
+   * **Title:** The app feels really slow today
+   * **Body:** I don't know what changed, but every time I load the main page on mobile Safari, it takes 10 seconds and crashes.
 
 ## 4. Expected Result
 
-GitHub automatically receives a **bug** label.
+- GitHub automatically receives a **bug** label.
+- Dashboard displays the processed event.
+- Slack receives a structured notification. *(Note: For this live demo, alerts are routed to the internal GitSync Slack workspace. See the preview below!)*
 
-Slack receives a notification.
-
-Dashboard displays the processed event.
+### Slack Notification Preview
+<img src="./assets/Slack%20Notification.png" width="600" alt="Slack Message Preview" />
 
 ------------------------------------------------------------------------
 
@@ -169,6 +153,10 @@ SLACK_WEBHOOK_URL=
 GEMINI_API_KEY=
 ```
 
+###  Note on Local Webhook Secrets
+If you are running the app locally and want to test webhooks (using a local tunnel like `ngrok` or `smee.io`), you must configure a webhook on one of your own test repositories. You can invent any secret string you like (e.g., `local_test_secret_123`) for the GitHub Webhook configuration, as long as it exactly matches the `GITHUB_WEBHOOK_SECRET` in your `server/.env` file.
+
+
 ## 2. Frontend (`client/.env`)
 
 Create a `.env` file inside the **client** directory:
@@ -176,6 +164,16 @@ Create a `.env` file inside the **client** directory:
 ```env
 VITE_API_URL=http://localhost:5000
 ```
+
+# Slack Setup (For Local Testing)
+
+If you are running this project locally and want to test the Slack integration:
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App**.
+2. Select **From scratch**, name it "GitSync Local", and pick your test workspace.
+3. In the sidebar, click **Incoming Webhooks** and toggle it to **On**.
+4. Scroll down, click **Add New Webhook to Workspace**, and select a channel.
+5. Copy the generated Webhook URL and paste it into your `server/.env` file as `SLACK_WEBHOOK_URL`.
 ------------------------------------------------------------------------
 
 # Database
